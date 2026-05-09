@@ -3093,7 +3093,7 @@ body.maximized {
 /* ── Root tokens override ── */
 :root {
     --nav-h: 62px;        /* bottom nav height */
-    --mini-h: 64px;       /* mini player bar height */
+    --mini-h: 76px;       /* mini player bar height */
     --safe-top: env(safe-area-inset-top, 24px);
     --safe-bot: env(safe-area-inset-bottom, 0px);
 }
@@ -3314,87 +3314,113 @@ body.maximized {
     stroke: var(--acc);
 }
 
-/* ── Mini player bar (above nav) ── */
+/* ── Mini player bar — Apple Music floating card ── */
 #bar {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: calc(var(--nav-h) + var(--safe-bot));
+    left: 10px;
+    right: 10px;
+    bottom: calc(var(--nav-h) + var(--safe-bot) + 10px);
     z-index: 190;
-    height: var(--mini-h);
-    background: rgba(10,10,22,0.92);
-    backdrop-filter: blur(40px) saturate(1.6);
-    -webkit-backdrop-filter: blur(40px) saturate(1.6);
-    border-top: 1px solid rgba(255,255,255,0.07);
+    height: 64px;
+    background: rgba(22,22,32,0.93);
+    backdrop-filter: blur(52px) saturate(2.0);
+    -webkit-backdrop-filter: blur(52px) saturate(2.0);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    box-shadow:
+        0 12px 40px rgba(0,0,0,0.60),
+        0 2px 8px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.06);
     display: block;
     padding: 0;
+    overflow: hidden;
     grid-template-columns: unset;
     grid-area: unset;
-    transition: transform 0.3s var(--ease);
+    transition: transform 0.42s cubic-bezier(0.34,1.1,0.64,1), opacity 0.3s ease;
 }
 
 #bar.bar-hidden {
-    transform: translateY(100%);
+    transform: translateY(calc(100% + 24px));
+    opacity: 0;
     pointer-events: none;
 }
 
 .bar-inner {
     display: flex;
     align-items: center;
-    gap: 8px;
-    height: var(--mini-h);
-    padding: 0 12px;
+    gap: 0;
+    height: 64px;
+    padding: 10px 4px 10px 10px;
 }
 
 #bar .bt-art {
-    width: 42px;
-    height: 42px;
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    border-radius: 9px;
     flex-shrink: 0;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.55);
     cursor: pointer;
+    object-fit: cover;
 }
 
 #bar .bt-m {
     flex: 1;
     min-width: 0;
     cursor: pointer;
+    padding: 0 10px;
 }
 
 #bar .bt-title {
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: rgba(255,255,255,0.96);
 }
 
 #bar .bt-ch {
     font-size: 11px;
+    color: rgba(255,255,255,0.44);
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #bar .bt-fav {
-    padding: 6px;
-    color: var(--t4);
+    display: none !important;
 }
 
 .bar-play {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: var(--t1);
-    color: #08080d;
+    background: transparent;
+    color: rgba(255,255,255,0.92);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    transition: transform 0.14s;
+}
+
+.bar-play:active {
+    transform: scale(0.86);
 }
 
 .bar-next {
-    color: var(--t3);
-    padding: 6px;
+    color: rgba(255,255,255,0.55);
+    padding: 8px 10px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .bar-prog {
     height: 2px;
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.07);
     position: absolute;
     bottom: 0;
     left: 0;
@@ -3403,7 +3429,7 @@ body.maximized {
 
 .bar-prog-fill {
     height: 100%;
-    background: var(--acc);
+    background: rgba(255,255,255,0.42);
     width: 0%;
     transition: width 0.25s linear;
     pointer-events: none;
@@ -3728,14 +3754,15 @@ body.maximized {
 /* ── Apple Music 스타일 가사 UI (Android NP 전용) ── */
 
 /* 가사 패널: 세로 스크롤 전체화면형 */
+/* 변경 */
 .np-lyrics-panel {
     width: 100% !important;
     max-height: none !important;
-    height: 260px !important;
+    height: min(215px, 36vh) !important;
     flex: none !important;
     position: relative !important;
     overflow: hidden !important;
-    margin-top: 20px !important;
+    margin-top: 14px !important;
 }
 
 .np-lyrics-scroll {
@@ -3822,15 +3849,20 @@ body.maximized {
 }
 
 /* 가사 없음 */
+/* 변경 */
 .np-no-lyrics {
-    position: static !important;
+    position: absolute !important;
+    bottom: 220px !important;
+    left: 0 !important;
+    right: 0 !important;
     transform: none !important;
     display: block !important;
     text-align: center !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
     color: rgba(255, 255, 255, 0.28) !important;
-    padding: 24px 0 !important;
+    padding: 0 !important;
     letter-spacing: 0.2px !important;
+    pointer-events: none !important;
 }
 
 /* 가사 로딩 */
@@ -3897,9 +3929,11 @@ button, a, div, span, input {
 
 /* ── NP 세밀 조정 ── */
 
-/* 1. 앨범 카드 크기 확대 + 아래로 이동 */
+/* 변경 */
+/* 1. 앨범 카드 크기 + NP 패널 항상 하단 고정 */
 .np-art-area {
-    padding: 80px 32px 8px !important;
+    padding: 80px 32px 0 !important;
+    padding-bottom: 205px !important;
     justify-content: flex-start !important;
 }
 
@@ -3909,8 +3943,22 @@ button, a, div, span, input {
 }
 
 .np-art-area.has-lyrics .np-art-shell {
-    width: min(240px, 68vw, 34vh) !important;
+    width: min(220px, 62vw, 30vh) !important;
     margin-top: 12px !important;
+}
+
+/* ── NP 패널: 가사 유무에 무관하게 항상 화면 하단 고정 ── */
+#np:not(.fullscreen) .np-panel {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 20 !important;
+    padding: 16px 20px calc(var(--safe-bot) + 20px) !important;
+    gap: 10px !important;
+    background: linear-gradient(to top,
+        rgba(0,0,0,0.76) 60%,
+        transparent 100%) !important;
 }
 
 /* 2. 가사 폰트 크기 */
