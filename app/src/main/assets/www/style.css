@@ -3894,3 +3894,47 @@ button, a, div, span, input {
     color: rgba(255, 255, 255, 0.22) !important;
     filter: none !important;
 }
+
+/* ── NP 세밀 조정 ── */
+
+/* 1. 앨범 카드 크기 확대 + 아래로 이동 */
+.np-art-area {
+    padding: 80px 32px 8px !important;
+    justify-content: flex-start !important;
+}
+
+.np-art-shell {
+    width: min(300px, 88vw, 48vh) !important;
+    margin-top: 16px !important;
+}
+
+.np-art-area.has-lyrics .np-art-shell {
+    width: min(240px, 68vw, 34vh) !important;
+    margin-top: 12px !important;
+}
+
+/* 2. 가사 폰트 크기 */
+.np-lyric-line,
+.np-lyric-line.active,
+.np-lyric-line.prev,
+.np-lyric-line.near {
+    font-size: 17px !important;
+}
+
+.np-lyric-line.active {
+    font-weight: 700 !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* 3. 가사 폰트: Apple Music 스타일 SF Pro 계열 */
+.np-lyric-line {
+    font-family:
+        -apple-system,
+        'SF Pro Display',
+        'SF Pro Text',
+        'Helvetica Neue',
+        'Noto Sans KR',
+        sans-serif !important;
+    letter-spacing: -0.4px !important;
+    word-break: keep-all !important;
+}
