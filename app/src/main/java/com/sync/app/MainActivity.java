@@ -241,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
             try (Response resp = http.newCall(req).execute()) {
                 if (!resp.isSuccessful() || resp.body() == null)
                     throw new IOException("HTTP " + resp.code());
-                JSONArray tracks = parseSearchResults(resp.body().string());
+                JSONArray tracks = parseSearchResults(readUtf8(resp));
                 JSONObject result = new JSONObject();
                 result.put("type", "searchResult");
                 result.put("id", id);
@@ -359,7 +359,7 @@ public class MainActivity extends AppCompatActivity {
                     .build();
             try (Response resp = http.newCall(req).execute()) {
                 if (resp.body() == null) throw new IOException("empty");
-                String json = resp.body().string();
+                String json = readUtf8(resp);
                 if (json.startsWith("window."))
                     json = json.replaceFirst("^[^(]+\\(", "")
                                .replaceFirst("\\)\\s*$", "");
@@ -471,7 +471,7 @@ public class MainActivity extends AppCompatActivity {
         try (Response resp = http.newCall(req).execute()) {
             if (resp.body() == null) return new JSONArray();
             Object parsed = new org.json.JSONTokener(
-                    resp.body().string()).nextValue();
+                    readUtf8(resp)).nextValue();
             return parsed instanceof JSONArray ? (JSONArray) parsed : new JSONArray();
         }
     }
@@ -529,7 +529,7 @@ public class MainActivity extends AppCompatActivity {
                     .build();
             try (Response resp = http.newCall(req).execute()) {
                 if (resp.body() == null) return;
-                JSONObject doc = new JSONObject(resp.body().string());
+                JSONObject doc = new JSONObject(readUtf8(resp));
                 if (!doc.has("result")) return;
                 JSONArray songs = doc.getJSONObject("result").optJSONArray("songs");
                 if (songs == null) return;
@@ -570,7 +570,7 @@ public class MainActivity extends AppCompatActivity {
                     .build();
             try (Response resp = http.newCall(req).execute()) {
                 if (resp.body() == null) return null;
-                JSONObject doc = new JSONObject(resp.body().string());
+                JSONObject doc = new JSONObject(readUtf8(resp));
                 String lrc = null;
                 if (doc.has("klyric"))
                     lrc = doc.getJSONObject("klyric").optString("lyric", null);
@@ -724,6 +724,15 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         executor.shutdown();
         webView.destroy();
+    }
+
+    /**
+     * OkHttp는 Content-Type에 charset이 없으면 Latin-1로 읽음.
+     * 한글 깨짐 방지를 위해 항상 명시적 UTF-8로 바이트를 읽는다.
+     */
+    private String readUtf8(Response resp) throws IOException {
+        byte[] bytes = resp.body().bytes();
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     @Override
