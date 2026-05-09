@@ -372,7 +372,6 @@ public class MainActivity extends AppCompatActivity {
         return durSec >= 60 || durSec == 0;
     }
 
-    }
 
     private void doSuggest(JSONObject msg) {
         String query = msg.optString("query");
