@@ -3884,16 +3884,6 @@ body.maximized {
     width: min(200px, 55vw, 28vh) !important;
 }
 
-/* ── NP 즐겨찾기 버튼: 활성화 시 하트 채움 (Android WebView 강제 적용) ── */
-#np-fav.on path,
-#np-fav.on svg path {
-    fill: var(--acc) !important;
-    stroke: var(--acc) !important;
-}
-
-#np-fav svg path {
-    transition: fill 0.2s ease, stroke 0.2s ease;
-}
 
 /* 탭 하이라이트 완전 제거 */
 button, a, div, span, input {
@@ -3977,17 +3967,19 @@ button, a, div, span, input {
         transparent 100%) !important;
 }
 
-/* 2. 가사 폰트 크기 */
+/* 2. 가사 폰트 크기 + 굵기 (최종 override) */
 .np-lyric-line,
-.np-lyric-line.active,
 .np-lyric-line.prev,
 .np-lyric-line.near {
     font-size: 17px !important;
+    font-weight: 700 !important;
 }
 
 .np-lyric-line.active {
-    font-weight: 700 !important;
-    color: rgba(255, 255, 255, 0.95) !important;
+    font-size: 17px !important;
+    font-weight: 800 !important;   /* 핵심: 700 → 800 */
+    color: rgba(255, 255, 255, 0.97) !important;
+    filter: drop-shadow(0 0 14px rgba(255,255,255,0.14)) !important;
 }
 
 /* 3. 가사 폰트: Apple Music 스타일 SF Pro 계열 */
@@ -4001,4 +3993,15 @@ button, a, div, span, input {
         sans-serif !important;
     letter-spacing: -0.4px !important;
     word-break: keep-all !important;
+}
+
+/* ── NP 즐겨찾기 버튼: 활성화 시 하트 채움 (Android WebView 강제 적용) ── */
+#np-fav.on path,
+#np-fav.on svg path {
+    fill: var(--acc) !important;
+    stroke: var(--acc) !important;
+}
+
+#np-fav svg path {
+    transition: fill 0.2s ease, stroke 0.2s ease;
 }
