@@ -239,17 +239,19 @@ public class MainActivity extends AppCompatActivity {
             JSONObject body = new JSONObject();
             body.put("context", context);
             body.put("query", query);
-            body.put("params", "EgIQAQ%3D%3D");
+            // EgIQAQ== = 영상 검색 필터 (URL인코딩 제거)
+            body.put("params", "EgIQAQ==");
 
             Request req = new Request.Builder()
                     .url(URL)
                     .post(RequestBody.create(
                             body.toString(),
-                            MediaType.parse("application/json")))
+                            MediaType.parse("application/json; charset=utf-8")))
                     .addHeader("X-YouTube-Client-Name", "1")
                     .addHeader("X-YouTube-Client-Version", "2.20240101.00.00")
                     .addHeader("Origin", "https://www.youtube.com")
                     .addHeader("Referer", "https://www.youtube.com/")
+                    .addHeader("Accept-Language", "ko-KR,ko;q=0.9,en;q=0.8")
                     .addHeader("User-Agent",
                             "Mozilla/5.0 (Linux; Android 14) " +
                             "AppleWebKit/537.36 Chrome/124.0 Safari/537.36")
@@ -281,12 +283,17 @@ public class MainActivity extends AppCompatActivity {
     private JSONArray parseSearchResults(String json) throws JSONException {
         JSONArray list = new JSONArray();
         JSONObject doc = new JSONObject(json);
-        JSONArray sections = doc
-                .getJSONObject("contents")
-                .getJSONObject("twoColumnSearchResultsRenderer")
-                .getJSONObject("primaryContents")
-                .getJSONObject("sectionListRenderer")
-                .getJSONArray("contents");
+        if (!doc.has("contents")) return list;
+
+        JSONArray sections;
+        try {
+            sections = doc
+                    .getJSONObject("contents")
+                    .getJSONObject("twoColumnSearchResultsRenderer")
+                    .getJSONObject("primaryContents")
+                    .getJSONObject("sectionListRenderer")
+                    .getJSONArray("contents");
+        } catch (JSONException e) { return list; }
 
         for (int s = 0; s < sections.length() && list.length() < 20; s++) {
             JSONObject sec = sections.getJSONObject(s);
@@ -298,40 +305,27 @@ public class MainActivity extends AppCompatActivity {
                 JSONObject item = items.getJSONObject(k);
                 if (!item.has("videoRenderer")) continue;
                 JSONObject vr = item.getJSONObject("videoRenderer");
-                if (!vr.has("videoId")) continue;
-                String vid = vr.getString("videoId");
+                String vid = vr.optString("videoId", "");
                 if (vid.isEmpty()) continue;
 
-                String title = "";
-                if (vr.has("title") &&
-                        vr.getJSONObject("title").has("runs"))
-                    title = vr.getJSONObject("title")
-                              .getJSONArray("runs")
-                              .getJSONObject(0).optString("text", "");
+                String title = extractText(vr, "title");
+                String ch = extractText(vr, "ownerText");
+                if (ch.isEmpty()) ch = extractText(vr, "shortBylineText");
 
-                String ch = "";
-                if (vr.has("ownerText") &&
-                        vr.getJSONObject("ownerText").has("runs"))
-                    ch = vr.getJSONObject("ownerText")
-                           .getJSONArray("runs")
-                           .getJSONObject(0).optString("text", "");
-                else if (vr.has("shortBylineText") &&
-                        vr.getJSONObject("shortBylineText").has("runs"))
-                    ch = vr.getJSONObject("shortBylineText")
-                           .getJSONArray("runs")
-                           .getJSONObject(0).optString("text", "");
+                String durStr = "";
+                try {
+                    if (vr.has("lengthText"))
+                        durStr = vr.getJSONObject("lengthText").optString("simpleText", "");
+                } catch (JSONException ignored2) {}
 
-                String durStr = vr.has("lengthText")
-                        ? vr.getJSONObject("lengthText").optString("simpleText", "")
-                        : "";
-
-                if (!isMusicVideo(title, ch)) continue;
+                int dur = parseDur(durStr);
+                if (!isMusicVideo(title, ch, dur)) continue;
 
                 JSONObject t = new JSONObject();
                 t.put("id", vid);
                 t.put("title", title);
                 t.put("channel", ch);
-                t.put("dur", parseDur(durStr));
+                t.put("dur", dur);
                 t.put("thumb", "https://i.ytimg.com/vi/" + vid + "/mqdefault.jpg");
                 list.put(t);
             }
@@ -339,17 +333,14 @@ public class MainActivity extends AppCompatActivity {
         return list;
     }
 
-    private boolean isMusicVideo(String title, String channel) {
-        String tl = title.toLowerCase(), cl = channel.toLowerCase();
-        for (String kw : new String[]{
-                "vevo","topic","music","records",
-                "entertainment","sound","audio","official"})
-            if (cl.contains(kw)) return true;
-        for (String kw : new String[]{
-                "official","mv","m/v","music video","audio",
-                "lyrics","lyric","visualizer","live","performance","concert"})
-            if (tl.contains(kw)) return true;
-        return false;
+    private String extractText(JSONObject vr, String key) {
+        try {
+            if (!vr.has(key)) return "";
+            JSONObject obj = vr.getJSONObject(key);
+            if (obj.has("runs"))
+                return obj.getJSONArray("runs").getJSONObject(0).optString("text", "");
+            return obj.optString("simpleText", "");
+        } catch (JSONException e) { return ""; }
     }
 
     private int parseDur(String s) {
@@ -362,6 +353,25 @@ public class MainActivity extends AppCompatActivity {
                     + Integer.parseInt(p[1]);
         } catch (NumberFormatException ignored) {}
         return 0;
+    }
+
+    private boolean isMusicVideo(String title, String channel, int durSec) {
+        String tl = title.toLowerCase(), cl = channel.toLowerCase();
+        // 채널명 키워드
+        for (String kw : new String[]{
+                "vevo","topic","music","records","entertainment",
+                "sound","audio","official","label","studio"})
+            if (cl.contains(kw)) return true;
+        // 제목 키워드
+        for (String kw : new String[]{
+                "official","mv","m/v","music video","audio","lyrics",
+                "lyric","visualizer","live","performance","concert","feat",
+                "뮤직비디오","음원","공식","노래"})
+            if (tl.contains(kw)) return true;
+        // 1분 이상 or 길이 미상 → 통과
+        return durSec >= 60 || durSec == 0;
+    }
+
     }
 
     private void doSuggest(JSONObject msg) {
@@ -434,28 +444,44 @@ public class MainActivity extends AppCompatActivity {
         } catch (JSONException ignored) {}
     }
 
+    // ════════════════════════════════════════════════════
+    //  1차: lrclib.net — PC 버전 C# 동일 알고리즘 포팅
+    // ════════════════════════════════════════════════════
     private JSONArray tryLrclib(String rawTitle, String channel, double ytDur) {
         try {
             String ct = cleanTitle(rawTitle);
             String ca = cleanArtist(channel);
 
-            JSONArray results = searchLrclib(ct + " " + ca);
-            if (!hasSyncedResults(results)) results = searchLrclib(ct);
-            if (!hasSyncedResults(results)) {
-                String stripped = stripBrackets(ct);
-                if (!stripped.equals(ct)) results = searchLrclib(stripped);
+            // ── 검색 쿼리 변형 목록 (PC 버전과 동일) ──
+            String stripped = stripBrackets(ct);
+            List<String> queries = new ArrayList<>();
+            queries.add(ct + " " + ca);
+            queries.add(ct);
+            if (!stripped.equals(ct)) queries.add(stripped);
+            if (!ca.isEmpty()) queries.add(ca + " " + ct);
+            if (!ca.isEmpty() && !stripped.equals(ct)) queries.add(stripped + " " + ca);
+
+            // synced 결과가 나올 때까지 순서대로 시도
+            JSONArray results = new JSONArray();
+            for (String q : queries) {
+                JSONArray r = searchLrclib(q);
+                if (hasSyncedResults(r)) { results = r; break; }
+                // synced 없어도 결과가 있으면 후보로 보관
+                if (results.length() == 0 && r.length() > 0) results = r;
             }
-            if (!hasSyncedResults(results) && !ca.isEmpty())
-                results = searchLrclib(ca + " " + ct);
 
-            if (results == null || results.length() == 0) return null;
+            if (results.length() == 0) return null;
 
+            // ── 후보 채점 (PC 버전 동일 가중치) ──
             String bestLrc   = null;
             double bestScore = Double.NEGATIVE_INFINITY;
 
             for (int i = 0; i < results.length(); i++) {
                 JSONObject item = results.getJSONObject(i);
-                String lrcText  = item.optString("syncedLyrics", "");
+
+                // syncedLyrics 우선, 없으면 plainLyrics도 시도
+                String lrcText = item.optString("syncedLyrics", "");
+                if (lrcText.isEmpty()) lrcText = item.optString("plainLyrics", "");
                 if (lrcText.isEmpty()) continue;
 
                 double lrcDur = getLrcLastTimestamp(lrcText);
@@ -472,6 +498,8 @@ public class MainActivity extends AppCompatActivity {
                 }
                 score += titleSim(ct, item.optString("trackName",  "")) * 30;
                 score += titleSim(ca, item.optString("artistName", "")) * 20;
+                // syncedLyrics 있으면 보너스
+                if (!item.optString("syncedLyrics", "").isEmpty()) score += 10;
 
                 if (score > bestScore) { bestScore = score; bestLrc = lrcText; }
             }
@@ -479,53 +507,68 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) { return null; }
     }
 
-    private JSONArray searchLrclib(String query) throws IOException, JSONException {
-        String url = "https://lrclib.net/api/search?q="
-                + java.net.URLEncoder.encode(query, "UTF-8");
-        Request req = new Request.Builder().url(url)
-                .addHeader("User-Agent", "SYNCApp/1.0")
-                .build();
-        try (Response resp = http.newCall(req).execute()) {
-            if (resp.body() == null) return new JSONArray();
-            Object parsed = new org.json.JSONTokener(
-                    readUtf8(resp)).nextValue();
-            return parsed instanceof JSONArray ? (JSONArray) parsed : new JSONArray();
-        }
+    private JSONArray searchLrclib(String query) {
+        try {
+            String url = "https://lrclib.net/api/search?q="
+                    + java.net.URLEncoder.encode(query, "UTF-8");
+            Request req = new Request.Builder().url(url)
+                    .addHeader("User-Agent", "SYNCApp/1.0 (https://github.com/sync)")
+                    .addHeader("Accept", "application/json")
+                    .build();
+            try (Response resp = http.newCall(req).execute()) {
+                if (resp.body() == null) return new JSONArray();
+                Object parsed = new org.json.JSONTokener(readUtf8(resp)).nextValue();
+                return parsed instanceof JSONArray ? (JSONArray) parsed : new JSONArray();
+            }
+        } catch (Exception e) { return new JSONArray(); }
     }
 
-    private boolean hasSyncedResults(JSONArray arr) throws JSONException {
+    private boolean hasSyncedResults(JSONArray arr) {
         if (arr == null) return false;
-        for (int i = 0; i < arr.length(); i++)
-            if (!arr.getJSONObject(i).optString("syncedLyrics", "").isEmpty())
-                return true;
+        try {
+            for (int i = 0; i < arr.length(); i++)
+                if (!arr.getJSONObject(i).optString("syncedLyrics", "").isEmpty())
+                    return true;
+        } catch (JSONException ignored) {}
         return false;
     }
 
+    // ════════════════════════════════════════════════════
+    //  2차: NetEase Cloud Music — 점수 하한 완화
+    // ════════════════════════════════════════════════════
     private JSONArray tryNetEase(String rawTitle, String channel, double ytDur) {
         try {
             String ct = cleanTitle(rawTitle);
             String ca = cleanArtist(channel);
-            String[] queries = { ct + " " + ca, ct, stripBrackets(ct) };
 
-            List<long[]>  ids    = null;
-            List<Double>  scores = null;
+            // PC 버전과 동일한 쿼리 변형
+            String stripped = stripBrackets(ct);
+            List<String> queryList = new ArrayList<>();
+            queryList.add(ct + " " + ca);
+            queryList.add(ct);
+            if (!stripped.equals(ct)) queryList.add(stripped);
+            if (!ca.isEmpty()) queryList.add(ca + " " + ct);
 
-            for (String q : queries) {
-                ids    = new ArrayList<>();
-                scores = new ArrayList<>();
-                searchNetEase(q, ct, ca, ytDur, ids, scores);
-                if (!ids.isEmpty()) break;
+            List<long[]>  ids    = new ArrayList<>();
+            List<Double>  scores = new ArrayList<>();
+
+            for (String q : queryList) {
+                List<long[]>  tmpIds    = new ArrayList<>();
+                List<Double>  tmpScores = new ArrayList<>();
+                searchNetEase(q, ct, ca, ytDur, tmpIds, tmpScores);
+                if (!tmpIds.isEmpty()) { ids = tmpIds; scores = tmpScores; break; }
             }
-            if (ids == null || ids.isEmpty()) return null;
+            if (ids.isEmpty()) return null;
 
+            // 점수 내림차순 정렬
             Integer[] idx = new Integer[ids.size()];
             for (int i = 0; i < idx.length; i++) idx[i] = i;
             final List<Double> fs = scores;
-            Arrays.sort(idx, (a, b) ->
-                    Double.compare(fs.get(b), fs.get(a)));
+            Arrays.sort(idx, (a, b) -> Double.compare(fs.get(b), fs.get(a)));
 
-            for (int i = 0; i < Math.min(3, idx.length); i++) {
-                if (fs.get(idx[i]) < 40) break;
+            // 점수 하한 20으로 완화 (PC 버전 C#은 40이었으나 Android는 더 넉넉하게)
+            for (int i = 0; i < Math.min(5, idx.length); i++) {
+                if (fs.get(idx[i]) < 20) break;
                 JSONArray lines = fetchNetEaseLrc(ids.get(idx[i])[0]);
                 if (lines != null && lines.length() > 0) return lines;
             }
