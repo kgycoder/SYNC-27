@@ -3392,17 +3392,24 @@ body.maximized {
     display: none !important;
 }
 
+/* 변경 */
 .bar-play {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: transparent;
-    color: rgba(255,255,255,0.92);
+    background: rgba(255,255,255,0.92);
+    color: #08080d;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: transform 0.14s;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+    transition: transform 0.14s, background 0.14s;
+}
+
+.bar-play:active {
+    transform: scale(0.88);
+    background: #fff;
 }
 
 .bar-play:active {
@@ -3877,6 +3884,17 @@ body.maximized {
     width: min(200px, 55vw, 28vh) !important;
 }
 
+/* ── NP 즐겨찾기 버튼: 활성화 시 하트 채움 (Android WebView 강제 적용) ── */
+#np-fav.on path,
+#np-fav.on svg path {
+    fill: var(--acc) !important;
+    stroke: var(--acc) !important;
+}
+
+#np-fav svg path {
+    transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
 /* 탭 하이라이트 완전 제거 */
 button, a, div, span, input {
     -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
@@ -3885,9 +3903,10 @@ button, a, div, span, input {
 /* ── 가사 폰트/애니메이션 재조정 ── */
 
 /* 모든 가사 줄: 크기 통일 (커지는 효과 제거) */
+/* 변경 */
 .np-lyric-line {
     font-size: 15px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;   /* 600 → 700 */
     line-height: 1.6 !important;
     color: rgba(255, 255, 255, 0.22) !important;
     padding: 4px 0 !important;
@@ -3897,33 +3916,30 @@ button, a, div, span, input {
     transition:
         color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
         filter 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-    /* font-size transition 제거 → 커지는 효과 없음 */
     will-change: color, filter !important;
     user-select: none !important;
     -webkit-user-select: none !important;
 }
 
-/* 현재 줄: 크기 변화 없이 색상+글로우만 */
 .np-lyric-line.active {
-    font-size: 15px !important;   /* 같은 크기 유지 */
-    font-weight: 700 !important;
-    color: rgba(255, 255, 255, 0.95) !important;
-    letter-spacing: -0.2px !important;
-    filter: drop-shadow(0 0 12px rgba(255,255,255,0.15)) !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;   /* 700 → 800 */
+    color: rgba(255, 255, 255, 0.97) !important;
+    letter-spacing: -0.3px !important;
+    filter: drop-shadow(0 0 14px rgba(255,255,255,0.16)) !important;
 }
 
-/* 이전 줄 */
 .np-lyric-line.prev {
     font-size: 15px !important;
-    font-weight: 600 !important;
-    color: rgba(255, 255, 255, 0.42) !important;
+    font-weight: 700 !important;   /* 600 → 700 */
+    color: rgba(255, 255, 255, 0.50) !important;
     filter: none !important;
 }
 
-/* 근처 줄 */
 .np-lyric-line.near {
     font-size: 15px !important;
-    color: rgba(255, 255, 255, 0.22) !important;
+    font-weight: 700 !important;   /* 추가 */
+    color: rgba(255, 255, 255, 0.24) !important;
     filter: none !important;
 }
 
