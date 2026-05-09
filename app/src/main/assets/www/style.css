@@ -3711,3 +3711,141 @@ body.maximized {
 }
 
 * { -webkit-tap-highlight-color: transparent !important; outline: none !important; }
+
+/* ════════════════════════════════════════════════════════
+   ANDROID PATCH: 한글 폰트 + Tap highlight + Apple Music 가사
+════════════════════════════════════════════════════════ */
+
+/* ── 전역 폰트: Noto Sans KR 적용 ── */
+*, *::before, *::after {
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont,
+                 'Segoe UI', sans-serif !important;
+    -webkit-tap-highlight-color: transparent !important;
+    outline: none !important;
+    -webkit-touch-callout: none;
+}
+
+/* ── Apple Music 스타일 가사 UI (Android NP 전용) ── */
+
+/* 가사 패널: 세로 스크롤 전체화면형 */
+.np-lyrics-panel {
+    width: 100% !important;
+    max-height: none !important;
+    height: 260px !important;
+    flex: none !important;
+    position: relative !important;
+    overflow: hidden !important;
+    margin-top: 20px !important;
+}
+
+.np-lyrics-scroll {
+    width: 100% !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 48px 24px !important;
+    scrollbar-width: none !important;
+    scroll-behavior: smooth !important;
+    /* Apple Music: 위아래 fade */
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        black 18%,
+        black 75%,
+        transparent 100%
+    ) !important;
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        black 18%,
+        black 75%,
+        transparent 100%
+    ) !important;
+}
+
+.np-lyrics-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    padding-bottom: 80px !important;
+}
+
+/* ── 가사 한 줄 — Apple Music 스타일 ── */
+.np-lyric-line {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    line-height: 1.5 !important;
+    color: rgba(255, 255, 255, 0.22) !important;
+    padding: 6px 0 !important;
+    cursor: pointer !important;
+    letter-spacing: -0.3px !important;
+    word-break: keep-all !important;
+    overflow-wrap: break-word !important;
+    transition:
+        color 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        font-size 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        filter 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    will-change: color, font-size, filter !important;
+    -webkit-font-smoothing: antialiased !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+/* 현재 활성 줄 — Apple Music: 크고 밝게 */
+.np-lyric-line.active {
+    font-size: 26px !important;
+    font-weight: 800 !important;
+    color: rgba(255, 255, 255, 0.97) !important;
+    letter-spacing: -0.5px !important;
+    filter:
+        drop-shadow(0 0 24px rgba(255, 255, 255, 0.20))
+        drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6)) !important;
+}
+
+/* 바로 이전 줄 */
+.np-lyric-line.prev {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    color: rgba(255, 255, 255, 0.48) !important;
+    filter: none !important;
+}
+
+/* 근처 줄 */
+.np-lyric-line.near {
+    color: rgba(255, 255, 255, 0.24) !important;
+    filter: none !important;
+}
+
+/* 터치 피드백 */
+.np-lyric-line:active {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* 가사 없음 */
+.np-no-lyrics {
+    position: static !important;
+    transform: none !important;
+    display: block !important;
+    text-align: center !important;
+    font-size: 13px !important;
+    color: rgba(255, 255, 255, 0.28) !important;
+    padding: 24px 0 !important;
+    letter-spacing: 0.2px !important;
+}
+
+/* 가사 로딩 */
+.np-lyrics-loading {
+    min-height: 120px !important;
+    font-size: 12px !important;
+    color: rgba(255, 255, 255, 0.28) !important;
+}
+
+/* 가사 있을 때 아트 크기 줄임 */
+.np-art-area.has-lyrics .np-art-shell {
+    width: min(200px, 55vw, 28vh) !important;
+}
+
+/* 탭 하이라이트 완전 제거 */
+button, a, div, span, input {
+    -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+}
