@@ -4140,8 +4140,3 @@ button, a, div, span, input {
         0 -2px 20px rgba(0,0,0,0.25),
         0 0 0 0.5px rgba(255,255,255,0.07) !important;
 }
-
-/* toast 위치 보정 */
-#toast {
-    bottom: calc(var(--mini-h) + var(--nav-h) + var(--safe-bot) + 20px) !important;
-}
