@@ -108,7 +108,29 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public WebResourceResponse shouldInterceptRequest(
                     WebView view, WebResourceRequest request) {
-                return assetLoader.shouldInterceptRequest(request.getUrl());
+                WebResourceResponse response =
+                        assetLoader.shouldInterceptRequest(request.getUrl());
+                if (response != null) {
+                    // AssetLoader가 charset을 생략하면 WebView가 Latin-1로 읽음.
+                    // 모든 텍스트 리소스에 UTF-8 강제 지정 → 한글 깨짐 방지
+                    String mime = response.getMimeType();
+                    if (mime == null) mime = "text/plain";
+                    String encoding = "UTF-8";
+                    // 이미 올바른 MIME+charset 헤더를 덮어쓰지 않도록
+                    // 새 WebResourceResponse로 래핑해서 반환
+                    java.util.Map<String, String> headers =
+                            new java.util.HashMap<>();
+                    headers.put("Access-Control-Allow-Origin", "*");
+                    headers.put("Cache-Control", "no-cache");
+                    return new WebResourceResponse(
+                            mime,
+                            encoding,
+                            response.getStatusCode(),
+                            response.getReasonPhrase(),
+                            headers,
+                            response.getData());
+                }
+                return null;
             }
 
             @Override
@@ -150,10 +172,16 @@ public class MainActivity extends AppCompatActivity {
         String b64 = Base64.encodeToString(
                 payload.toString().getBytes(StandardCharsets.UTF_8),
                 Base64.NO_WRAP);
-        runOnUiThread(() ->
-                webView.evaluateJavascript(
-                        "window.__sync && window.__sync(atob('" + b64 + "'))",
-                        null));
+        // atob()는 Latin-1만 처리 → TextDecoder로 UTF-8 명시 디코딩
+        String js =
+            "(function(){" +
+            "  var b=atob('" + b64 + "');" +
+            "  var bytes=new Uint8Array(b.length);" +
+            "  for(var i=0;i<b.length;i++) bytes[i]=b.charCodeAt(i);" +
+            "  var s=new TextDecoder('utf-8').decode(bytes);" +
+            "  window.__sync && window.__sync(s);" +
+            "})();";
+        runOnUiThread(() -> webView.evaluateJavascript(js, null));
     }
 
     private void setOrientation(String mode) {
