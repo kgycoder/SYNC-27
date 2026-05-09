@@ -110,27 +110,16 @@ public class MainActivity extends AppCompatActivity {
                     WebView view, WebResourceRequest request) {
                 WebResourceResponse response =
                         assetLoader.shouldInterceptRequest(request.getUrl());
-                if (response != null) {
-                    // AssetLoader가 charset을 생략하면 WebView가 Latin-1로 읽음.
-                    // 모든 텍스트 리소스에 UTF-8 강제 지정 → 한글 깨짐 방지
-                    String mime = response.getMimeType();
-                    if (mime == null) mime = "text/plain";
-                    String encoding = "UTF-8";
-                    // 이미 올바른 MIME+charset 헤더를 덮어쓰지 않도록
-                    // 새 WebResourceResponse로 래핑해서 반환
-                    java.util.Map<String, String> headers =
-                            new java.util.HashMap<>();
-                    headers.put("Access-Control-Allow-Origin", "*");
-                    headers.put("Cache-Control", "no-cache");
-                    return new WebResourceResponse(
-                            mime,
-                            encoding,
-                            response.getStatusCode(),
-                            response.getReasonPhrase(),
-                            headers,
-                            response.getData());
-                }
-                return null;
+                if (response == null) return null;
+
+                // AssetLoader 응답의 MIME만 가져오고
+                // encoding을 UTF-8로 명시한 2인수 생성자 사용 (NPE 없음)
+                String mime = response.getMimeType();
+                if (mime == null) mime = "text/plain";
+                // charset이 이미 붙어 있으면 제거 후 재지정
+                if (mime.contains(";")) mime = mime.substring(0, mime.indexOf(";")).trim();
+
+                return new WebResourceResponse(mime, "UTF-8", response.getData());
             }
 
             @Override
